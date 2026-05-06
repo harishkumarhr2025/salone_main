@@ -126,8 +126,8 @@ const Home = () => {
                 color: 'rgba(255,255,255,0.9)',
               }}
             >
-              Professional salon operations with role-based access, service management, staff tracking,
-              and reporting in one place.
+              Everything your salon needs — manage services, track staff, control access by role,
+              and get powerful reports, all from a single platform.
             </Typography>
 
             <Stack
