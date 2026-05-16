@@ -124,6 +124,13 @@ const guestSchema = new mongoose.Schema(
       min: 0,
       default: 0,
     },
+    date_of_birth: {
+      type: Date,
+    },
+    checkoutReminderSent: {
+      type: Boolean,
+      default: false,
+    },
     bedId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Bed", // Reference to Bed model

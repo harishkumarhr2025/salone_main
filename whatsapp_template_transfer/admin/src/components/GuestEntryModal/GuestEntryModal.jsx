@@ -70,6 +70,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
     Contact_number: '',
     Guest_address: '',
     Emergency_number: '',
+    date_of_birth: null,
     Arrival_date: '',
     Arrival_time: '',
     Checkout_date: '',
@@ -194,8 +195,13 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
 
     Contact_number: phoneValidation,
     Emergency_number: phoneValidation,
+    date_of_birth: Yup.date().nullable().optional(),
     Room_no: Yup.string().required('Room No is required'),
-    bedId: Yup.string().required('Bed selection is required'),
+    bedId: Yup.string().when('Guest_type', {
+      is: 'Daily',
+      then: Yup.string(),
+      otherwise: Yup.string().required('Bed selection is required'),
+    }),
     Guest_type: Yup.string().required('Guest type is required'),
     Guest_address: Yup.string().required('Guest Address is required'),
     Room_type: Yup.string().required('Room type is required'),
@@ -207,11 +213,19 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
       .required('Number of adults required')
       .integer('Must be a whole number')
       .min(1, 'At least 1 adult'),
-    Children: Yup.number()
-      .typeError('Number of Children must be a number')
-      .integer('Must be a whole number')
-      .min(0, 'cannot be negative'),
-    Profession_type: Yup.string().required('Profession type is required'),
+    Children: Yup.mixed().when('Guest_type', {
+      is: 'Daily',
+      then: Yup.mixed().notRequired(),
+      otherwise: Yup.number()
+        .typeError('Number of Children must be a number')
+        .integer('Must be a whole number')
+        .min(0, 'cannot be negative'),
+    }),
+    Profession_type: Yup.string().when('Guest_type', {
+      is: 'Daily',
+      then: Yup.string(),
+      otherwise: Yup.string().required('Profession type is required'),
+    }),
     Payment_type: Yup.string().required('Payment type is required'),
     Foreign_guest_native_country: Yup.string().when('Guest_nationality', {
       is: 'Other',
@@ -586,6 +600,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
         Contact_number: '',
         Guest_address: '',
         Emergency_number: '',
+        date_of_birth: null,
         Checkout_date: '',
         Checkout_time: '',
         Room_no: '',
@@ -630,6 +645,12 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
     setGuestDetails((prevDetails) => ({
       ...prevDetails,
       [name]: value,
+      ...(name === 'Guest_type' && value === 'Daily' && {
+        bedId: '',
+        bedNumber: '',
+        Children: '',
+        Profession_type: '',
+      }),
     }));
 
     if (touched[name]) {
@@ -694,17 +715,19 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
     const fetchData = async () => {
       await handleRoom();
     };
-
     fetchData();
   }, []);
 
+  // Fetch check-in WhatsApp templates when modal opens
   useEffect(() => {
-    if (!open || guest) return;
+    if (!open || guest) return; // only for new guests
     Config.get('/whatsapp/templates', { params: { isActive: true } })
       .then((res) => {
-        const all = res.data?.data || [];
-        setWaTemplates(all);
-        const defaultSelected = all.filter((t) => t.category === 'check-in').map((t) => t._id);
+        setWaTemplates(res.data?.data || []);
+        // Pre-select check-in templates by default
+        const defaultSelected = (res.data?.data || [])
+          .filter((t) => t.category === 'check-in')
+          .map((t) => t._id);
         setSelectedWaTemplates(defaultSelected);
       })
       .catch(() => setWaTemplates([]));
@@ -733,6 +756,12 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
       fetchBeds();
     }
   }, [guestDetails.roomId]);
+
+  const requiredInputSx = {
+    '& .MuiInputBase-root': {
+      backgroundColor: '#fff9c4',
+    },
+  };
 
   return (
     <Modal
@@ -818,6 +847,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                     }}
                     sx={{
                       width: '50%',
+                      ...requiredInputSx,
                     }}
                   />
                   <TextField
@@ -832,6 +862,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                     error={!!errorText.Guest_name}
                     sx={{
                       width: '50%',
+                      ...requiredInputSx,
                     }}
                   />
                 </Box>
@@ -858,6 +889,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                     }}
                     sx={{
                       width: '50%',
+                      ...requiredInputSx,
                     }}
                   />
                   <TextField
@@ -872,6 +904,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                     error={!!errorText.Guest_email}
                     sx={{
                       width: '50%',
+                      ...requiredInputSx,
                     }}
                   />
                 </Box>
@@ -892,9 +925,13 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                     }}
                     sx={{
                       width: '50%',
+                      ...requiredInputSx,
                     }}
                   />
-                  <FormControl sx={{ minWidth: 120, width: '50%' }} error={!!errorText.Guest_type}>
+                  <FormControl
+                    sx={{ minWidth: 120, width: '50%', ...requiredInputSx }}
+                    error={!!errorText.Guest_type}
+                  >
                     <InputLabel required id="demo-select-small-label">
                       Guest Type
                     </InputLabel>
@@ -916,6 +953,29 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                     )}
                   </FormControl>
                 </Box>
+
+                <Box sx={{ display: 'flex', gap: 2, marginTop: '20px' }}>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                      label="Date of Birth"
+                      value={guestDetails.date_of_birth ? dayjs(guestDetails.date_of_birth) : null}
+                      onChange={(newValue) =>
+                        setGuestDetails({ ...guestDetails, date_of_birth: newValue ? newValue.toDate() : null })
+                      }
+                      inputFormat="DD/MM/YYYY"
+                      disableFuture
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Date of Birth"
+                          helperText="Optional — used for birthday wishes"
+                          sx={{ width: '50%' }}
+                        />
+                      )}
+                    />
+                  </LocalizationProvider>
+                </Box>
+
                 {guestDetails.Guest_type === 'Monthly' ? (
                   <Box
                     sx={{
@@ -1130,7 +1190,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                           ...params.InputProps,
                           style: {
                             borderRadius: '8px',
-                            backgroundColor: '#f8f9fa',
+                            backgroundColor: '#fff9c4',
                             transition: 'all 0.3s ease',
                           },
                         }}
@@ -1208,7 +1268,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                     }}
                   />
 
-                  <Autocomplete
+                  {guestDetails.Guest_type !== 'Daily' && <Autocomplete
                     options={beds?.filter((bed) => bed.status === 'available') || []}
                     getOptionLabel={(option) => `${option.bedNumber}`}
                     value={beds?.find((bed) => bed._id === guestDetails.bedId) || null}
@@ -1244,7 +1304,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                           ),
                           style: {
                             borderRadius: '8px',
-                            backgroundColor: '#f8f9fa',
+                            backgroundColor: '#fff9c4',
                             transition: 'all 0.3s ease',
                           },
                         }}
@@ -1320,9 +1380,12 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                       },
                     }}
                     disabled={!guestDetails.roomId}
-                  />
+                  />}
 
-                  <FormControl sx={{ minWidth: 120, width: '50%' }} error={!!errorText.Room_type}>
+                  <FormControl
+                    sx={{ minWidth: 120, width: '50%', ...requiredInputSx }}
+                    error={!!errorText.Room_type}
+                  >
                     <InputLabel id="demo-select-small-label">Room Type</InputLabel>
                     <Select
                       name="Room_type"
@@ -1358,6 +1421,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                     }}
                     sx={{
                       width: '50%',
+                      ...requiredInputSx,
                     }}
                   />
                   <TextField
@@ -1390,10 +1454,11 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                       pattern: '[0-9]*',
                     }}
                     sx={{
-                      width: '50%',
+                      width: guestDetails.Guest_type !== 'Daily' ? '50%' : '100%',
+                      ...requiredInputSx,
                     }}
                   />
-                  <TextField
+                  {guestDetails.Guest_type !== 'Daily' && <TextField
                     name="Children"
                     id="outlined-basic"
                     label="Number of Children"
@@ -1406,33 +1471,39 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                     sx={{
                       width: '50%',
                     }}
-                  />
+                  />}
                 </Box>
 
                 <Box sx={{ display: 'flex', gap: 2, marginTop: '20px', alignItems: 'center' }}>
-                  <FormControl
-                    sx={{ minWidth: 120, width: '50%' }}
-                    error={!!errorText.Profession_type}
-                  >
-                    <InputLabel id="demo-select-small-label">Profession Type</InputLabel>
-                    <Select
-                      name="Profession_type"
-                      labelId="demo-select-small-label"
-                      id="demo-select-small"
-                      value={guestDetails.Profession_type}
-                      label="Profession Type"
-                      onChange={handleChange}
-                      onBlur={handleBlur}
+                  {guestDetails.Guest_type !== 'Daily' && (
+                    <FormControl
+                      sx={{ minWidth: 120, width: '50%', ...requiredInputSx }}
+                      error={!!errorText.Profession_type}
                     >
-                      <MenuItem value={'Student'}>Student</MenuItem>
-                      <MenuItem value={'Working'}>Working</MenuItem>
-                    </Select>
-                    {errorText.Profession_type && (
-                      <FormHelperText error>{errorText.Profession_type}</FormHelperText>
-                    )}
-                  </FormControl>
+                      <InputLabel id="demo-select-small-label">Profession Type</InputLabel>
+                      <Select
+                        name="Profession_type"
+                        labelId="demo-select-small-label"
+                        id="demo-select-small"
+                        value={guestDetails.Profession_type}
+                        label="Profession Type"
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                      >
+                        <MenuItem value={'Student'}>Student</MenuItem>
+                        <MenuItem value={'Working'}>Working</MenuItem>
+                      </Select>
+                      {errorText.Profession_type && (
+                        <FormHelperText error>{errorText.Profession_type}</FormHelperText>
+                      )}
+                    </FormControl>
+                  )}
                   <FormControl
-                    sx={{ minWidth: 120, width: '50%' }}
+                    sx={{
+                      minWidth: 120,
+                      width: guestDetails.Guest_type !== 'Daily' ? '50%' : '100%',
+                      ...requiredInputSx,
+                    }}
                     error={!!errorText.Payment_type}
                   >
                     <InputLabel id="demo-select-small-label">Payment Type</InputLabel>
@@ -1469,6 +1540,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                     fullWidth
                     multiline
                     rows={3}
+                    sx={requiredInputSx}
                   />
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, marginTop: '20px', alignItems: 'center' }}>
@@ -1506,7 +1578,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                   }}
                 >
                   <FormControl
-                    sx={{ minWidth: 120 }}
+                    sx={{ minWidth: 120, ...requiredInputSx }}
                     fullWidth
                     error={!!errorText.Guest_nationality}
                   >
@@ -1800,6 +1872,7 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                   </Box>
                 )}
 
+                {/* WhatsApp template selector — only for new guests */}
                 {!guest && waTemplates.length > 0 && (
                   <Box
                     sx={{
@@ -1813,11 +1886,11 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                     <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
                       <WhatsAppIcon sx={{ color: '#25D366' }} fontSize="small" />
                       <Typography variant="subtitle2" fontWeight={700}>
-                        Send WhatsApp On Check-in
+                        Send WhatsApp Messages on Check-in
                       </Typography>
                     </Stack>
                     <Typography variant="caption" color="text.secondary" display="block" mb={1.5}>
-                      Select templates to send after successful check-in:
+                      Select templates to send to the guest after successful check-in:
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                       {waTemplates.map((t) => {
@@ -1829,7 +1902,11 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                             clickable
                             color={selected ? 'success' : 'default'}
                             variant={selected ? 'filled' : 'outlined'}
-                            icon={selected ? <CheckCircleIcon style={{ fontSize: 16 }} /> : undefined}
+                            icon={
+                              selected ? (
+                                <CheckCircleIcon style={{ fontSize: 16 }} />
+                              ) : undefined
+                            }
                             onClick={() =>
                               setSelectedWaTemplates((prev) =>
                                 prev.includes(t._id)
@@ -1842,6 +1919,11 @@ const GuestEntryModal = ({ open, handleClose, handleModalSubmit, opacityValue, g
                         );
                       })}
                     </Box>
+                    {selectedWaTemplates.length > 0 && (
+                      <Typography variant="caption" color="success.main" sx={{ mt: 1, display: 'block' }}>
+                        {selectedWaTemplates.length} template{selectedWaTemplates.length > 1 ? 's' : ''} will be sent
+                      </Typography>
+                    )}
                   </Box>
                 )}
 

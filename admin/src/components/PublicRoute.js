@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { CheckAuthentication } from 'src/redux/features/AuthSlice';
+import { CheckAuthentication, logout } from 'src/redux/features/AuthSlice';
 import { Box, CircularProgress } from '@mui/material';
 
 const PublicRoute = ({ Component }) => {
@@ -22,6 +22,7 @@ const PublicRoute = ({ Component }) => {
         await dispatch(CheckAuthentication()).unwrap();
       } catch (error) {
         localStorage.removeItem('token');
+        dispatch(logout());
       } finally {
         setIsVerifying(false);
       }

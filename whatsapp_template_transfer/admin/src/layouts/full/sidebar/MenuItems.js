@@ -1,7 +1,8 @@
 import {
   IconLayoutDashboard,
-  IconScissors,
+  IconMan,
   IconCar,
+  IconHome2,
   IconTools,
   IconReport,
   IconBrandWhatsapp,
@@ -21,26 +22,20 @@ const Menuitems = [
     href: '/dashboard',
   },
   {
+    id: uniqueId(),
+    title: 'Guest Entry',
+    icon: IconMan,
+    href: '/guest-entry',
+  },
+  {
     navlabel: true,
-    subheader: 'Salon',
+    subheader: 'Room',
   },
   {
     id: uniqueId(),
-    title: 'Salon',
-    icon: IconScissors,
-    href: '/salon-management',
-  },
-  {
-    id: uniqueId(),
-    title: 'Salon Report',
-    icon: IconReport,
-    href: '/salon-report',
-  },
-  {
-    id: uniqueId(),
-    title: 'Salon Services',
-    icon: IconTools,
-    href: '/salon-services',
+    title: 'Room',
+    icon: IconHome2,
+    href: '/room-management',
   },
   {
     navlabel: true,
@@ -74,16 +69,6 @@ const Menuitems = [
   },
   {
     navlabel: true,
-    subheader: 'Access Control',
-  },
-  {
-    id: uniqueId(),
-    title: 'Roles',
-    icon: IconTools,
-    href: '/roles',
-  },
-  {
-    navlabel: true,
     subheader: 'WhatsApp',
   },
   {
@@ -91,6 +76,16 @@ const Menuitems = [
     title: 'WA Templates',
     icon: IconBrandWhatsapp,
     href: '/whatsapp-templates',
+  },
+  {
+    navlabel: true,
+    subheader: 'Access Control',
+  },
+  {
+    id: uniqueId(),
+    title: 'Roles',
+    icon: IconTools,
+    href: '/roles',
   },
 ];
 

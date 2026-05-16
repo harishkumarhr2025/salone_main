@@ -47,6 +47,7 @@ const CheckoutModal = ({ open, handleClose, opacityValue, guest, handleCategoryS
     setGuestDetails({ Checkout_date: dayjs(), Checkout_time: dayjs() });
   }, [open, guest]);
 
+  // Fetch checkout & reminder WhatsApp templates when modal opens
   useEffect(() => {
     if (!open) return;
     Config.get('/whatsapp/templates', { params: { isActive: true } })
@@ -56,9 +57,11 @@ const CheckoutModal = ({ open, handleClose, opacityValue, guest, handleCategoryS
           (t) => t.category === 'checkout' || t.category === 'reminder',
         );
         setWaTemplates(checkoutTemplates);
-        setSelectedWaTemplates(
-          checkoutTemplates.filter((t) => t.category === 'checkout').map((t) => t._id),
-        );
+        // Pre-select checkout templates by default
+        const defaultSelected = checkoutTemplates
+          .filter((t) => t.category === 'checkout')
+          .map((t) => t._id);
+        setSelectedWaTemplates(defaultSelected);
       })
       .catch(() => setWaTemplates([]));
   }, [open]);
@@ -344,6 +347,7 @@ const CheckoutModal = ({ open, handleClose, opacityValue, guest, handleCategoryS
               />
             </Box>
 
+            {/* WhatsApp template selector for checkout */}
             {waTemplates.length > 0 && (
               <Box
                 sx={{
@@ -357,16 +361,19 @@ const CheckoutModal = ({ open, handleClose, opacityValue, guest, handleCategoryS
                 <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
                   <WhatsAppIcon sx={{ color: '#25D366' }} fontSize="small" />
                   <Typography variant="subtitle2" fontWeight={700}>
-                    Send WhatsApp On Checkout
+                    Send WhatsApp on Checkout
                   </Typography>
                 </Stack>
+                <Typography variant="caption" color="text.secondary" display="block" mb={1.5}>
+                  Select templates to send to the guest after successful checkout:
+                </Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                   {waTemplates.map((t) => {
                     const selected = selectedWaTemplates.includes(t._id);
                     return (
                       <Chip
                         key={t._id}
-                        label={t.name}
+                        label={`${t.name}${t.category === 'reminder' ? ' (Reminder)' : ''}`}
                         clickable
                         color={selected ? 'success' : 'default'}
                         variant={selected ? 'filled' : 'outlined'}
@@ -378,10 +385,17 @@ const CheckoutModal = ({ open, handleClose, opacityValue, guest, handleCategoryS
                               : [...prev, t._id],
                           )
                         }
+                        sx={{ textTransform: 'capitalize' }}
                       />
                     );
                   })}
                 </Box>
+                {selectedWaTemplates.length > 0 && (
+                  <Typography variant="caption" color="success.main" sx={{ mt: 1, display: 'block' }}>
+                    {selectedWaTemplates.length} template
+                    {selectedWaTemplates.length > 1 ? 's' : ''} will be sent
+                  </Typography>
+                )}
               </Box>
             )}
           </Paper>

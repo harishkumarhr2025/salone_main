@@ -48,7 +48,7 @@ const Protected = ({ Component, allowedRoles = [] }) => {
       ? allowedRoles.some((role) => hasRole(user, role))
       : canAccessDashboard(user);
 
-  return isAuthenticated && hasRequiredRole ? <Component /> : <Navigate to="/" replace />;
+  return isAuthenticated && hasRequiredRole ? <Component /> : <Navigate to="/auth/login" replace />;
 };
 
 export default Protected;

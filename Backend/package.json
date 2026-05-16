@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "migrate:remove-salon-checkout-date": "node scripts/removeSalonCheckoutDateFields.js"
+    "migrate:remove-salon-checkout-date": "node scripts/removeSalonCheckoutDateFields.js",
+    "init:salon-collections": "node scripts/initSalonCollections.js",
+    "migrate:salon-db": "node scripts/migrateSalonToDedicatedDb.js"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +16,7 @@
   "description": "",
   "dependencies": {
     "@sendgrid/mail": "^8.1.4",
+    "axios": "^1.7.9",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.6.0",
     "cors": "^2.8.5",

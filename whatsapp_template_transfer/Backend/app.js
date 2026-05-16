@@ -17,18 +17,13 @@ import EmployeeRouter from "./routers/EmployeeRouter.js";
 import SalonRouter from "./routers/Salon/SalonRouter.js";
 import ProductRouter from "./routers/ProductRouter.js";
 import WhatsAppRouter from "./routers/WhatsAppRouter.js";
-import {
-  initDailyReportCron,
-  initScheduledWhatsAppCron,
-  initCheckoutReminderCron,
-  initBirthdayReschedulerCron,
-} from "./Services/cronJob.js";
+import { initDailyReportCron, initScheduledWhatsAppCron, initCheckoutReminderCron, initBirthdayReschedulerCron } from "./Services/cronJob.js";
 import { seedWhatsAppTemplates } from "./scripts/seedWhatsAppTemplates.js";
 
 import connectDB from "./DB/ConnectDB.js";
 // import { generateMonthlySalonReportPDF } from "./PDF/Salon/generateSalonReportPDF.js";
 
-const PORT = process.env.PORT || 8001;
+const PORT = process.env.PORT || 8000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -62,9 +57,8 @@ const localUpload = multer({
   },
 });
 
-connectDB(process.env.MONGO_URL_PROD);
-// connectDB(process.env.MONGO_URL_DEV);
-seedWhatsAppTemplates();
+connectDB(process.env.MONGO_URL_PROD).then(() => seedWhatsAppTemplates());
+// connectDB(process.env.MONGO_URL_DEV).then(() => seedWhatsAppTemplates());
 // Start cron when server starts
 initDailyReportCron();
 initScheduledWhatsAppCron();
